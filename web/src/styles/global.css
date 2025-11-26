@@ -43,6 +43,7 @@
 }
 
 /* --- Dark Mode Colors - Applied via body.dark-mode --- */
+html.dark-mode,
 body.dark-mode {
   --color-primary: 52, 211, 153;    /* Vibrant Green */
   --color-primary-alt: 16, 185, 129;
@@ -327,59 +328,140 @@ body.theme-animating::after {
   --sidebar-collapsed-width: 64px;
 }
 
+/* --- SIDEBAR --- */
 .app-sidebar {
-  position: fixed; left: 0; top: 0; bottom: 0;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+
   width: var(--sidebar-width);
-  transform: translateX(calc(-100% + var(--sidebar-width)));
   transition: transform var(--motion-duration) var(--motion-ease);
   z-index: 40;
+
   background: var(--surface);
   color: var(--text-primary);
-  display: flex; flex-direction: column; gap: 8px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
   padding: 1rem 0.5rem;
-  box-shadow: 2px 0 12px rgba(0,0,0,0.08);
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
   border-right: 1px solid var(--border);
-  transition: var(--transition-fast);
 }
+
 body.dark-mode .app-sidebar {
-  box-shadow: 2px 0 12px rgba(255,255,255,0.08);
+  box-shadow: 2px 0 12px rgba(255, 255, 255, 0.08);
 }
 
-body:not(.sidebar-open) .app-sidebar { transform: translateX(calc(-100% + var(--sidebar-collapsed-width))); }
-body.sidebar-open .app-sidebar { transform: translateX(0); }
+/* --- ESTADO ABIERTO / CERRADO --- */
+/* Cerrado: sidebar completamente fuera de pantalla */
+body:not(.sidebar-open) .app-sidebar {
+  transform: translateX(-100%);
+}
 
-.app-sidebar .brand { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; }
+/* Abierto: sin transformación */
+body.sidebar-open .app-sidebar {
+  transform: translateX(0);
+}
+
+/* --- CONTENIDO DEL SIDEBAR --- */
+.app-sidebar .brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
 .app-sidebar .nav-link {
-  display: flex; align-items: center; gap: 0.75rem;
-  padding: 0.5rem 0.5rem; border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.5rem;
+  border-radius: 0.375rem;
   color: var(--text-secondary);
-  text-decoration: none; font-size: 0.95rem;
+  text-decoration: none;
+  font-size: 0.95rem;
   transition: var(--transition-fast);
 }
+
 .app-sidebar .nav-link:hover {
   background: rgba(var(--color-primary), 0.1);
   color: var(--primary);
 }
-.app-sidebar .nav-link .icon { width: 1.25rem; display: inline-flex; justify-content: center; }
 
+.app-sidebar .nav-link .icon {
+  width: 1.25rem;
+  display: inline-flex;
+  justify-content: center;
+}
+
+/* --- BOTÓN TOGGLE --- */
 .sidebar-toggle-btn {
-  position: fixed; left: var(--sidebar-collapsed-width); top: 12px;
-  z-index: 50; width: 42px; height: 42px;
-  display: inline-flex; align-items: center; justify-content: center;
+  position: fixed;
+  left: 12px;
+  top: 12px;
+  z-index: 50;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 10px;
   background: var(--surface-lighter);
   color: var(--text-primary);
   box-shadow: var(--shadow-medium);
   transition: var(--transition-fast);
 }
+
 .sidebar-toggle-btn:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-large);
 }
+
+/* Cuando el sidebar está abierto, mueve el botón a la derecha del panel */
 body.sidebar-open .sidebar-toggle-btn {
-  left: calc(var(--sidebar-width) + 12px); transform: translateX(-12px);
+  left: calc(var(--sidebar-width) + 16px);
 }
 
+/* --- RESPONSIVE --- */
+@media (max-width: 767px) {
+  .app-sidebar {
+    transform: translateX(-100%);
+  }
+  body.sidebar-open .app-sidebar {
+    transform: translateX(0);
+  }
+  .sidebar-toggle-btn {
+    left: 12px;
+  }
+}
+
+/* ========================================================
+   HEADER TITLE OFFSET (solo mueve el nombre Finance App)
+   ======================================================== */
+
+/* Cuando el sidebar está cerrado (solo botón visible) */
+.header-title {
+  margin-left: calc(var(--sidebar-collapsed-width));
+  transition: margin-left var(--motion-duration) var(--motion-ease);
+}
+
+/* Cuando el sidebar está abierto: aumentamos margen */
+body.sidebar-open .header-title {
+  margin-left: calc(var(--sidebar-width) + 48px);
+}
+
+/* En móviles: no exageramos el margen */
+@media (max-width: 767px) {
+  .header-title {
+    margin-left: 56px;
+  }
+  body.sidebar-open .header-title {
+    margin-left: 56px;
+  }
+}
 
 /* ========================================================
    MODAL

@@ -13,13 +13,35 @@ const { title = "Finance App" } = Astro.props;
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
+
+    <!-- SCRIPT PARA PREVENIR EL PARPADEO DEL TEMA (FOUC) -->
+    <script is:inline>
+      const getTheme = () => {
+        const savedTheme = localStorage.getItem('ui_theme');
+        if (savedTheme === 'dark' || savedTheme === 'light') {
+          return savedTheme;
+        }
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      };
+
+      const theme = getTheme();
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+        document.body.classList.add('dark-mode'); // Asegúrate de que body también tenga la clase
+      }
+    </script>
   </head>
-  <body class="min-h-screen"> {/* No 'dark-mode' class, as it's the default */}
+  <body class="min-h-screen"> {/* No 'dark-mode' class aquí inicialmente, el script la añade */}
     <Sidebar client:load />
 
     <header class="py-4 border-b border-[rgba(var(--color-border-rgb),0.1)] sticky top-0 z-20" style="background-color: var(--surface);">
       <div class="container flex items-center justify-between">
-        <a href="/" class="text-xl font-semibold" style="color: var(--primary);">Finance App</a>
+        <a
+          href="/"
+          class="text-xl font-semibold header-title"
+          style="color: var(--primary);"
+        >
+        Finance App
       </div>
     </header>
 
