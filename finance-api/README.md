@@ -273,9 +273,8 @@ git commit -m "feat: add transaction filtering by date range"
 
 ## 👥 Equipo
 
-- [Tu Nombre] - [Carnet]
-- [Nombre 2] - [Carnet]
-- [Nombre 3] - [Carnet]
+- Jairo Jesús González Hidalgo
+- Rafael Odio Mendoza
 
 ## 📄 Licencia
 
