@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts   Account[]
+  budgets    Budget[]
+  debts      Debt[]
+  guarantees Guarantee[]
+
+  @@map("users")
+}
+
+model Account {
+  id             String   @id @default(uuid())
+  name           String
+  startingAmount Float    @default(0)
+  userId         String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@map("accounts")
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  description String
+  amount      Float
+  date        DateTime
+  tags        String[]
+  accountId   String
+  isRecurring Boolean  @default(false)
+  frequency   String?
+  endDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+
+model Budget {
+  id        String   @id @default(uuid())
+  name      String
+  limit     Float
+  tag       String
+  startDate DateTime?
+  endDate   DateTime?
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("budgets")
+}
+
+model Debt {
+  id           String   @id @default(uuid())
+  name         String
+  lender       String
+  principal    Float
+  interestRate Float    @default(0)
+  startDate    DateTime?
+  dueDate      DateTime
+  userId       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@map("debts")
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  amount    Float
+  date      DateTime
+  debtId    String
+  createdAt DateTime @default(now())
+
+  debt Debt @relation(fields: [debtId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model Guarantee {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  amount      Float
+  expiryDate  DateTime
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("guarantees")
+}
