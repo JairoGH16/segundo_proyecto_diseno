@@ -20,7 +20,12 @@ const app: Application = express();
 const PORT = process.env.PORT || 3000;
 
 // Middlewares
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Desactivar CSP para que Swagger funcione
+    crossOriginEmbedderPolicy: false,
+  })
+);
 // CORS - Permitir todo para desarrollo/pruebas
 app.use(cors({
   origin: '*',
