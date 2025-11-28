@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 const createGuaranteeSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
-  amount: z.number().positive(),
+  amount: z.number().nonnegative(), // CAMBIADO: Ahora permite 0
   expiryDate: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
 });
 
@@ -24,6 +24,12 @@ export class GuaranteeController {
    *     responses:
    *       200:
    *         description: List of guarantees
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/Guarantee'
    */
   getAll = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -49,23 +55,20 @@ export class GuaranteeController {
    *       content:
    *         application/json:
    *           schema:
-   *             type: object
-   *             required:
-   *               - name
-   *               - amount
-   *               - expiryDate
-   *             properties:
-   *               name:
-   *                 type: string
-   *               description:
-   *                 type: string
-   *               amount:
-   *                 type: number
-   *               expiryDate:
-   *                 type: string
+   *             $ref: '#/components/schemas/CreateGuaranteeInput'
    *     responses:
    *       201:
    *         description: Guarantee created
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Guarantee'
+   *       400:
+   *         description: Invalid input
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   create = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
