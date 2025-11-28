@@ -39,6 +39,20 @@ export class AccountService {
   }
 
   async create(data: CreateAccountData) {
+    // Validar que no exista otra cuenta con el mismo nombre para este usuario
+    const existingAccount = await prisma.account.findFirst({
+      where: {
+        userId: data.userId,
+        name: data.name,
+      },
+    });
+
+    if (existingAccount) {
+      throw new Error(
+        `You already have an account named "${data.name}". Please choose a different name.`
+      );
+    }
+
     return prisma.account.create({
       data: {
         name: data.name,
@@ -55,6 +69,23 @@ export class AccountService {
 
     if (!account) {
       throw new Error('Account not found');
+    }
+
+    // Si se está actualizando el nombre, verificar que no exista otra cuenta con ese nombre
+    if (data.name && data.name !== account.name) {
+      const existingAccount = await prisma.account.findFirst({
+        where: {
+          userId: userId,
+          name: data.name,
+          id: { not: id }, // Excluir la cuenta actual
+        },
+      });
+
+      if (existingAccount) {
+        throw new Error(
+          `You already have an account named "${data.name}". Please choose a different name.`
+        );
+      }
     }
 
     return prisma.account.update({

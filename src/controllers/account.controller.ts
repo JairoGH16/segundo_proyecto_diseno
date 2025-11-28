@@ -4,12 +4,12 @@ import { AccountService } from '../services/account.service';
 import { z } from 'zod';
 
 const createAccountSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().min(1).max(100),
   startingAmount: z.number().default(0),
 });
 
 const updateAccountSchema = z.object({
-  name: z.string().min(1).optional(),
+  name: z.string().min(1).max(100).optional(),
   startingAmount: z.number().optional(),
 });
 
@@ -96,12 +96,15 @@ export class AccountController {
    *             properties:
    *               name:
    *                 type: string
+   *                 maxLength: 100
    *               startingAmount:
    *                 type: number
    *                 default: 0
    *     responses:
    *       201:
    *         description: Account created
+   *       409:
+   *         description: Account name already exists for this user
    */
   create = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -113,7 +116,12 @@ export class AccountController {
       res.status(201).json(account);
     } catch (error: any) {
       if (error.name === 'ZodError') {
-        res.status(400).json({ error: 'Invalid input', details: error.errors });
+        res.status(400).json({ 
+          error: 'Invalid input', 
+          details: error.errors 
+        });
+      } else if (error.message.includes('already have an account')) {
+        res.status(409).json({ error: error.message });
       } else {
         res.status(400).json({ error: error.message });
       }
@@ -143,11 +151,14 @@ export class AccountController {
    *             properties:
    *               name:
    *                 type: string
+   *                 maxLength: 100
    *               startingAmount:
    *                 type: number
    *     responses:
    *       200:
    *         description: Account updated
+   *       409:
+   *         description: Account name already exists for this user
    */
   update = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -160,9 +171,16 @@ export class AccountController {
       res.json(account);
     } catch (error: any) {
       if (error.name === 'ZodError') {
-        res.status(400).json({ error: 'Invalid input', details: error.errors });
-      } else {
+        res.status(400).json({ 
+          error: 'Invalid input', 
+          details: error.errors 
+        });
+      } else if (error.message.includes('already have an account')) {
+        res.status(409).json({ error: error.message });
+      } else if (error.message === 'Account not found') {
         res.status(404).json({ error: error.message });
+      } else {
+        res.status(400).json({ error: error.message });
       }
     }
   };

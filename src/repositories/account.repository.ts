@@ -1,46 +1,107 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Account } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 export class AccountRepository {
-  async findByUserId(userId: string) {
+  /**
+   * Find all accounts for a user
+   */
+  async findByUserId(userId: string): Promise<Account[]> {
     return prisma.account.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async findById(id: string) {
+  /**
+   * Find account by ID
+   */
+  async findById(id: string): Promise<Account | null> {
     return prisma.account.findUnique({
       where: { id },
     });
   }
 
-  async findByIdAndUserId(id: string, userId: string) {
+  /**
+   * Find account by ID and user ID
+   */
+  async findByIdAndUserId(
+    id: string,
+    userId: string
+  ): Promise<Account | null> {
     return prisma.account.findFirst({
       where: { id, userId },
     });
   }
 
-  async create(data: { name: string; startingAmount: number; userId: string }) {
+  /**
+   * Find account by name and user ID
+   */
+  async findByNameAndUserId(
+    name: string,
+    userId: string
+  ): Promise<Account | null> {
+    return prisma.account.findFirst({
+      where: { name, userId },
+    });
+  }
+
+  /**
+   * Check if account name exists for user (excluding specific account)
+   */
+  async existsByNameAndUserId(
+    name: string,
+    userId: string,
+    excludeId?: string
+  ): Promise<boolean> {
+    const where: any = { name, userId };
+    
+    if (excludeId) {
+      where.id = { not: excludeId };
+    }
+
+    const count = await prisma.account.count({ where });
+    return count > 0;
+  }
+
+  /**
+   * Create new account
+   */
+  async create(data: {
+    name: string;
+    startingAmount: number;
+    userId: string;
+  }): Promise<Account> {
     return prisma.account.create({
       data,
     });
   }
 
-  async update(id: string, data: { name?: string; startingAmount?: number }) {
+  /**
+   * Update account
+   */
+  async update(
+    id: string,
+    data: { name?: string; startingAmount?: number }
+  ): Promise<Account> {
     return prisma.account.update({
       where: { id },
       data,
     });
   }
 
-  async delete(id: string) {
+  /**
+   * Delete account
+   */
+  async delete(id: string): Promise<Account> {
     return prisma.account.delete({
       where: { id },
     });
   }
 
+  /**
+   * Get account with transactions
+   */
   async findByIdWithTransactions(id: string, limit: number = 10) {
     return prisma.account.findUnique({
       where: { id },
@@ -56,6 +117,9 @@ export class AccountRepository {
     });
   }
 
+  /**
+   * Calculate current balance for an account
+   */
   async calculateBalance(accountId: string): Promise<number> {
     const account = await prisma.account.findUnique({
       where: { id: accountId },
@@ -69,13 +133,16 @@ export class AccountRepository {
     }
 
     const transactionsSum = account.transactions.reduce(
-      (sum: number, t: any) => sum + t.amount,
+      (sum, t) => sum + t.amount,
       0
     );
 
     return account.startingAmount + transactionsSum;
   }
 
+  /**
+   * Get accounts with balances
+   */
   async findByUserIdWithBalances(userId: string) {
     const accounts = await prisma.account.findMany({
       where: { userId },
@@ -87,13 +154,10 @@ export class AccountRepository {
       },
     });
 
-    return accounts.map((account: any) => {
+    return accounts.map((account) => {
       const balance =
         account.startingAmount +
-        account.transactions.reduce(
-          (sum: number, t: any) => sum + t.amount,
-          0
-        );
+        account.transactions.reduce((sum, t) => sum + t.amount, 0);
 
       return {
         id: account.id,
