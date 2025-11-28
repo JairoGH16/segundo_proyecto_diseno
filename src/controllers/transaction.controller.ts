@@ -11,7 +11,11 @@ const createTransactionSchema = z.object({
   accountId: z.string().uuid(),
   isRecurring: z.boolean().default(false),
   frequency: z.string().optional(),
-  endDate: z.string().datetime().optional().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()),
+  endDate: z
+    .string()
+    .datetime()
+    .optional()
+    .or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()),
 });
 
 const updateTransactionSchema = createTransactionSchema.partial();
@@ -28,6 +32,7 @@ export class TransactionController {
    * /api/transactions:
    *   get:
    *     summary: Get all transactions with filters
+   *     description: Returns a list of transactions for the authenticated user with optional filters
    *     tags: [Transactions]
    *     security:
    *       - bearerAuth: []
@@ -36,24 +41,49 @@ export class TransactionController {
    *         name: accountId
    *         schema:
    *           type: string
+   *           format: uuid
+   *         description: Filter by account ID
    *       - in: query
    *         name: startDate
    *         schema:
    *           type: string
    *           format: date
+   *         description: Filter transactions from this date
+   *         example: "2025-01-01"
    *       - in: query
    *         name: endDate
    *         schema:
    *           type: string
    *           format: date
+   *         description: Filter transactions until this date
+   *         example: "2025-12-31"
    *       - in: query
    *         name: tags
    *         schema:
    *           type: string
-   *         description: Comma-separated tags
+   *         description: Filter by tags (comma-separated)
+   *         example: "food,groceries"
    *     responses:
    *       200:
-   *         description: List of transactions
+   *         description: List of transactions retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/Transaction'
+   *       401:
+   *         description: Unauthorized
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   getAll = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -61,7 +91,9 @@ export class TransactionController {
         accountId: req.query.accountId as string,
         startDate: req.query.startDate as string,
         endDate: req.query.endDate as string,
-        tags: req.query.tags ? (req.query.tags as string).split(',') : undefined,
+        tags: req.query.tags
+          ? (req.query.tags as string).split(',')
+          : undefined,
       };
 
       const transactions = await this.transactionService.getAll(
@@ -79,6 +111,7 @@ export class TransactionController {
    * /api/transactions:
    *   post:
    *     summary: Create new transaction
+   *     description: Create a new transaction (income or expense) for a specific account
    *     tags: [Transactions]
    *     security:
    *       - bearerAuth: []
@@ -87,36 +120,26 @@ export class TransactionController {
    *       content:
    *         application/json:
    *           schema:
-   *             type: object
-   *             required:
-   *               - description
-   *               - amount
-   *               - date
-   *               - accountId
-   *             properties:
-   *               description:
-   *                 type: string
-   *               amount:
-   *                 type: number
-   *               date:
-   *                 type: string
-   *                 format: date
-   *               tags:
-   *                 type: array
-   *                 items:
-   *                   type: string
-   *               accountId:
-   *                 type: string
-   *               isRecurring:
-   *                 type: boolean
-   *               frequency:
-   *                 type: string
-   *               endDate:
-   *                 type: string
-   *                 format: date
+   *             $ref: '#/components/schemas/CreateTransaction'
    *     responses:
    *       201:
-   *         description: Transaction created
+   *         description: Transaction created successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Transaction'
+   *       400:
+   *         description: Invalid input or account not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         description: Unauthorized
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   create = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -140,6 +163,7 @@ export class TransactionController {
    * /api/transactions/{id}:
    *   put:
    *     summary: Update transaction
+   *     description: Update an existing transaction's information
    *     tags: [Transactions]
    *     security:
    *       - bearerAuth: []
@@ -149,6 +173,8 @@ export class TransactionController {
    *         required: true
    *         schema:
    *           type: string
+   *           format: uuid
+   *         description: Transaction UUID
    *     requestBody:
    *       required: true
    *       content:
@@ -158,17 +184,44 @@ export class TransactionController {
    *             properties:
    *               description:
    *                 type: string
+   *                 example: "Updated description"
    *               amount:
    *                 type: number
+   *                 example: -75.50
    *               date:
    *                 type: string
+   *                 format: date
+   *                 example: "2025-11-28"
    *               tags:
    *                 type: array
    *                 items:
    *                   type: string
+   *                 example: ["shopping", "clothes"]
    *     responses:
    *       200:
-   *         description: Transaction updated
+   *         description: Transaction updated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Transaction'
+   *       400:
+   *         description: Invalid input
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       404:
+   *         description: Transaction not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         description: Unauthorized
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   update = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -193,6 +246,7 @@ export class TransactionController {
    * /api/transactions/{id}:
    *   delete:
    *     summary: Delete transaction
+   *     description: Delete a transaction permanently
    *     tags: [Transactions]
    *     security:
    *       - bearerAuth: []
@@ -202,9 +256,23 @@ export class TransactionController {
    *         required: true
    *         schema:
    *           type: string
+   *           format: uuid
+   *         description: Transaction UUID
    *     responses:
    *       204:
-   *         description: Transaction deleted
+   *         description: Transaction deleted successfully
+   *       404:
+   *         description: Transaction not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         description: Unauthorized
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   delete = async (req: AuthRequest, res: Response): Promise<void> => {
     try {

@@ -25,30 +25,27 @@ export class AuthController {
    * /api/auth/register:
    *   post:
    *     summary: Register a new user
+   *     description: Create a new user account with email and password
    *     tags: [Auth]
    *     requestBody:
    *       required: true
    *       content:
    *         application/json:
    *           schema:
-   *             type: object
-   *             required:
-   *               - email
-   *               - password
-   *             properties:
-   *               email:
-   *                 type: string
-   *                 format: email
-   *               password:
-   *                 type: string
-   *                 minLength: 6
-   *               name:
-   *                 type: string
+   *             $ref: '#/components/schemas/RegisterRequest'
    *     responses:
    *       201:
    *         description: User registered successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/AuthResponse'
    *       400:
-   *         description: Invalid input
+   *         description: Invalid input or email already exists
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   register = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -69,26 +66,27 @@ export class AuthController {
    * /api/auth/login:
    *   post:
    *     summary: Login user
+   *     description: Authenticate user and receive JWT token
    *     tags: [Auth]
    *     requestBody:
    *       required: true
    *       content:
    *         application/json:
    *           schema:
-   *             type: object
-   *             required:
-   *               - email
-   *               - password
-   *             properties:
-   *               email:
-   *                 type: string
-   *               password:
-   *                 type: string
+   *             $ref: '#/components/schemas/LoginRequest'
    *     responses:
    *       200:
    *         description: Login successful
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/AuthResponse'
    *       401:
    *         description: Invalid credentials
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   login = async (req: Request, res: Response): Promise<void> => {
     try {

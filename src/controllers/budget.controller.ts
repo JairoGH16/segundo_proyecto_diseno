@@ -7,10 +7,18 @@ const prisma = new PrismaClient();
 
 const createBudgetSchema = z.object({
   name: z.string().min(1),
-  limit: z.number().positive(),
+  limit: z.number().min(0),
   tag: z.string().min(1),
-  startDate: z.string().datetime().optional().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()),
-  endDate: z.string().datetime().optional().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()),
+  startDate: z
+    .string()
+    .datetime()
+    .optional()
+    .or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()),
+  endDate: z
+    .string()
+    .datetime()
+    .optional()
+    .or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()),
 });
 
 export class BudgetController {
@@ -19,17 +27,37 @@ export class BudgetController {
    * /api/budgets:
    *   get:
    *     summary: Get all budgets
+   *     description: Returns a list of all budgets for the authenticated user
    *     tags: [Budgets]
    *     security:
    *       - bearerAuth: []
    *     responses:
    *       200:
-   *         description: List of budgets
+   *         description: List of budgets retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/Budget'
+   *       401:
+   *         description: Unauthorized
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   getAll = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const budgets = await prisma.budget.findMany({
         where: { userId: req.userId },
+        orderBy: { createdAt: 'desc' },
       });
       res.json(budgets);
     } catch (error: any) {
@@ -42,6 +70,7 @@ export class BudgetController {
    * /api/budgets:
    *   post:
    *     summary: Create new budget
+   *     description: Create a new budget to track expenses by tag
    *     tags: [Budgets]
    *     security:
    *       - bearerAuth: []
@@ -50,25 +79,26 @@ export class BudgetController {
    *       content:
    *         application/json:
    *           schema:
-   *             type: object
-   *             required:
-   *               - name
-   *               - limit
-   *               - tag
-   *             properties:
-   *               name:
-   *                 type: string
-   *               limit:
-   *                 type: number
-   *               tag:
-   *                 type: string
-   *               startDate:
-   *                 type: string
-   *               endDate:
-   *                 type: string
+   *             $ref: '#/components/schemas/CreateBudget'
    *     responses:
    *       201:
-   *         description: Budget created
+   *         description: Budget created successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Budget'
+   *       400:
+   *         description: Invalid input
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         description: Unauthorized
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
    */
   create = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
