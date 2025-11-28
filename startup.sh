@@ -11,5 +11,8 @@ npm install --production
 echo "Generating Prisma Client..."
 npx prisma generate
 
+echo "Running database migrations..."
+npx prisma db push --accept-data-loss
+
 echo "Starting application..."
 node dist/app.js
