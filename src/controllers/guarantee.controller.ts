@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 const createGuaranteeSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
-  amount: z.number().min(0),
+  amount: z.number().positive(),
   expiryDate: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
 });
 
@@ -18,37 +18,17 @@ export class GuaranteeController {
    * /api/guarantees:
    *   get:
    *     summary: Get all guarantees
-   *     description: Returns a list of all product guarantees/warranties for the authenticated user
    *     tags: [Guarantees]
    *     security:
    *       - bearerAuth: []
    *     responses:
    *       200:
-   *         description: List of guarantees retrieved successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: array
-   *               items:
-   *                 $ref: '#/components/schemas/Guarantee'
-   *       401:
-   *         description: Unauthorized
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Error'
-   *       500:
-   *         description: Internal server error
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Error'
+   *         description: List of guarantees
    */
   getAll = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const guarantees = await prisma.guarantee.findMany({
         where: { userId: req.userId },
-        orderBy: { expiryDate: 'asc' },
       });
       res.json(guarantees);
     } catch (error: any) {
@@ -61,7 +41,6 @@ export class GuaranteeController {
    * /api/guarantees:
    *   post:
    *     summary: Create new guarantee
-   *     description: Create a new product guarantee/warranty record. Use amount = 0 for included warranties
    *     tags: [Guarantees]
    *     security:
    *       - bearerAuth: []
@@ -70,26 +49,23 @@ export class GuaranteeController {
    *       content:
    *         application/json:
    *           schema:
-   *             $ref: '#/components/schemas/CreateGuarantee'
+   *             type: object
+   *             required:
+   *               - name
+   *               - amount
+   *               - expiryDate
+   *             properties:
+   *               name:
+   *                 type: string
+   *               description:
+   *                 type: string
+   *               amount:
+   *                 type: number
+   *               expiryDate:
+   *                 type: string
    *     responses:
    *       201:
-   *         description: Guarantee created successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Guarantee'
-   *       400:
-   *         description: Invalid input
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Error'
-   *       401:
-   *         description: Unauthorized
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Error'
+   *         description: Guarantee created
    */
   create = async (req: AuthRequest, res: Response): Promise<void> => {
     try {

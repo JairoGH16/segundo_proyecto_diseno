@@ -4,12 +4,12 @@ import { AccountService } from '../services/account.service';
 import { z } from 'zod';
 
 const createAccountSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().min(1).max(100),
   startingAmount: z.number().default(0),
 });
 
 const updateAccountSchema = z.object({
-  name: z.string().min(1).optional(),
+  name: z.string().min(1).max(100).optional(),
   startingAmount: z.number().optional(),
 });
 
@@ -25,31 +25,12 @@ export class AccountController {
    * /api/accounts:
    *   get:
    *     summary: Get all accounts for authenticated user
-   *     description: Returns a list of all accounts belonging to the authenticated user
    *     tags: [Accounts]
    *     security:
    *       - bearerAuth: []
    *     responses:
    *       200:
-   *         description: List of accounts retrieved successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: array
-   *               items:
-   *                 $ref: '#/components/schemas/Account'
-   *       401:
-   *         description: Unauthorized - Invalid or missing token
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Error'
-   *       500:
-   *         description: Internal server error
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Error'
+   *         description: List of accounts
    */
   getAll = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -65,7 +46,6 @@ export class AccountController {
    * /api/accounts/{id}:
    *   get:
    *     summary: Get account by ID
-   *     description: Returns a single account with its details and recent transactions
    *     tags: [Accounts]
    *     security:
    *       - bearerAuth: []
@@ -75,27 +55,11 @@ export class AccountController {
    *         required: true
    *         schema:
    *           type: string
-   *           format: uuid
-   *         description: Account UUID
    *     responses:
    *       200:
-   *         description: Account details retrieved successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Account'
+   *         description: Account details
    *       404:
    *         description: Account not found
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Error'
-   *       401:
-   *         description: Unauthorized
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Error'
    */
   getById = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -118,7 +82,6 @@ export class AccountController {
    * /api/accounts:
    *   post:
    *     summary: Create new account
-   *     description: Create a new bank account for the authenticated user
    *     tags: [Accounts]
    *     security:
    *       - bearerAuth: []
@@ -127,26 +90,21 @@ export class AccountController {
    *       content:
    *         application/json:
    *           schema:
-   *             $ref: '#/components/schemas/CreateAccount'
+   *             type: object
+   *             required:
+   *               - name
+   *             properties:
+   *               name:
+   *                 type: string
+   *                 maxLength: 100
+   *               startingAmount:
+   *                 type: number
+   *                 default: 0
    *     responses:
    *       201:
-   *         description: Account created successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Account'
-   *       400:
-   *         description: Invalid input
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Error'
-   *       401:
-   *         description: Unauthorized
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Error'
+   *         description: Account created
+   *       409:
+   *         description: Account name already exists for this user
    */
   create = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -158,7 +116,12 @@ export class AccountController {
       res.status(201).json(account);
     } catch (error: any) {
       if (error.name === 'ZodError') {
-        res.status(400).json({ error: 'Invalid input', details: error.errors });
+        res.status(400).json({ 
+          error: 'Invalid input', 
+          details: error.errors 
+        });
+      } else if (error.message.includes('already have an account')) {
+        res.status(409).json({ error: error.message });
       } else {
         res.status(400).json({ error: error.message });
       }
@@ -170,7 +133,6 @@ export class AccountController {
    * /api/accounts/{id}:
    *   put:
    *     summary: Update account
-   *     description: Update an existing account's information
    *     tags: [Accounts]
    *     security:
    *       - bearerAuth: []
@@ -180,39 +142,23 @@ export class AccountController {
    *         required: true
    *         schema:
    *           type: string
-   *           format: uuid
-   *         description: Account UUID
    *     requestBody:
    *       required: true
    *       content:
    *         application/json:
    *           schema:
-   *             $ref: '#/components/schemas/UpdateAccount'
+   *             type: object
+   *             properties:
+   *               name:
+   *                 type: string
+   *                 maxLength: 100
+   *               startingAmount:
+   *                 type: number
    *     responses:
    *       200:
-   *         description: Account updated successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Account'
-   *       400:
-   *         description: Invalid input
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Error'
-   *       404:
-   *         description: Account not found
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Error'
-   *       401:
-   *         description: Unauthorized
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Error'
+   *         description: Account updated
+   *       409:
+   *         description: Account name already exists for this user
    */
   update = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -225,9 +171,16 @@ export class AccountController {
       res.json(account);
     } catch (error: any) {
       if (error.name === 'ZodError') {
-        res.status(400).json({ error: 'Invalid input', details: error.errors });
-      } else {
+        res.status(400).json({ 
+          error: 'Invalid input', 
+          details: error.errors 
+        });
+      } else if (error.message.includes('already have an account')) {
+        res.status(409).json({ error: error.message });
+      } else if (error.message === 'Account not found') {
         res.status(404).json({ error: error.message });
+      } else {
+        res.status(400).json({ error: error.message });
       }
     }
   };
@@ -237,7 +190,6 @@ export class AccountController {
    * /api/accounts/{id}:
    *   delete:
    *     summary: Delete account
-   *     description: Delete an account and all its associated transactions
    *     tags: [Accounts]
    *     security:
    *       - bearerAuth: []
@@ -247,23 +199,9 @@ export class AccountController {
    *         required: true
    *         schema:
    *           type: string
-   *           format: uuid
-   *         description: Account UUID
    *     responses:
    *       204:
-   *         description: Account deleted successfully
-   *       404:
-   *         description: Account not found
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Error'
-   *       401:
-   *         description: Unauthorized
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Error'
+   *         description: Account deleted
    */
   delete = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
